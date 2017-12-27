@@ -3,6 +3,9 @@ library(tidyverse)
 library(stringr)
 library(mice)
 library(forcats)
+library(bestimate)
+
+set.seed(1234)
 
 mice.impute.ranger = function (y, ry, x, ntree = 10, wy = NULL, type = NULL, ...) 
 {
@@ -104,7 +107,6 @@ np = full_data %>%
 
 # Split nonprobs into separate samples and impute missingness for use in
 # modeling
-set.seed(1234)
 np_imputed = np %>% split(.$sample_id) %>%
   map(~complete(mice(., m=1, method="ranger"))) %>%
   bind_rows()
@@ -194,5 +196,11 @@ cps_civic = readRDS("data/raw/cps_nov13_civic_adult_benchmarks.RDS") %>%
          cps_index = 1:n())
 
 saveRDS(cps_civic, "data/cleaned/cps_civic_full_edited.RDS")
+
+# Create synthetic populations
+t = proc.time()
+sp_weights = fpbb_synth_pops(cps_civic$pwsrwgt, L=10, N=nrow(cps_civic) * 50)
+proc.time() - t
+saveRDS(sp_weights, "data/cleaned/sp_weights.RDS")
 
 
