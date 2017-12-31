@@ -197,10 +197,13 @@ cps_civic = readRDS("data/raw/cps_nov13_civic_adult_benchmarks.RDS") %>%
 
 saveRDS(cps_civic, "data/cleaned/cps_civic_full_edited.RDS")
 
-# Create synthetic populations
+
+
 t = proc.time()
-sp_weights = fpbb_synth_pops(cps_civic$pwsrwgt, L=10, N=nrow(cps_civic) * 50)
+set.seed(1234)
+sp_weights = fpbb_synth_pops(cps_civic$pwsrwgt, L=10, N=nrow(cps_civic) * 100)
 proc.time() - t
 saveRDS(sp_weights, "data/cleaned/sp_weights.RDS")
+
 
 
