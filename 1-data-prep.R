@@ -201,7 +201,7 @@ saveRDS(cps_civic, "data/cleaned/cps_civic_full_edited.RDS")
 
 t = proc.time()
 set.seed(1234)
-sp_weights = fpbb_synth_pops(cps_civic$pwsrwgt, L=10, N=nrow(cps_civic) * 100)
+sp_weights = fpbb_synth_pops(cps_civic$pwsrwgt, L=1, N=nrow(cps_civic) * 100)
 proc.time() - t
 saveRDS(sp_weights, "data/cleaned/sp_weights.RDS")
 
