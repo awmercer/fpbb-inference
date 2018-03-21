@@ -105,6 +105,10 @@ np = full_data %>%
   mutate(np_index = 1:n()) %>%
   ungroup()
 
+# Get missingess percentages
+np %>% group_by(sample_id) %>% summarise_at(vars(age, sex, racethn, educcat, fcregion), ~mean(is.na(.x))) %>%
+  knitr::kable(digits = 2)
+
 # Split nonprobs into separate samples and impute missingness for use in
 # modeling
 np_imputed = np %>% split(.$sample_id) %>%
