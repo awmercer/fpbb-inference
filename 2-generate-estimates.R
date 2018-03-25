@@ -219,13 +219,7 @@ get_estimate_posteriors = function(samp_id,
                    min_s_prop = min(s_prop)
                    phi = ref_prop >= min_s_prop
                  })
-  res$y_bar_pop_cs = y_vars %>%
-    map_dfc(function(y_var) {
-      map_dbl(ref_phi, function(phi) {
-        weighted.mean(ref[[y_var]], sp_wts * phi)
-      })
-    })
-  
+
   res$y_bar_samp_confounded = y_vars %>%
     map_dfc(function(y_var) {
       y_pos = pbart_posterior(y_fits_confounded[[y_var]],
@@ -242,14 +236,29 @@ get_estimate_posteriors = function(samp_id,
       y_bar_samp_unconfounded = colMeans(y_pos)
     })
   
-  res$y_bar_pop_unconfounded = y_vars %>%
-    map_dfc(function(y_var) {
+  # Unconfounded estimates for full population
+  y_bar_pop = y_vars %>%
+    map(function(y_var) {
       y_pos = pbart_posterior(y_fits_unconfounded[[y_var]],
                               newdata = x_ref,
                               mc.cores = cores)
-      y_bar_pop_unconfounded = colMeans(y_pos)
-    })
+      list(
+        # Posterior for for unconfounded population mean
+        y_bar_pop_unconfounded = colMeans(y_pos),
+        
+        # Posterior for unconfounded population mean among region
+        # of common support
+        y_bar_pop_unconfounded_cs = map2_dbl(y_pos, ref_phi, 
+                                             function(y, phi) {
+                                               weighted.mean(y, phi)
+                                             })
+      )
+      
+    }) %>%
+    transpose()
   
+  res = c(res, y_bar_pop)
+    
   cat(sprintf("Finished everything %.1f\n", from_start()))
   return(bind_rows(res, .id = "est"))
 }
