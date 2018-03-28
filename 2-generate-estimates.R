@@ -41,8 +41,10 @@ get_estimate_posteriors = function(samp_id,
   
   
   # Get subsample of reference
-  ref_subsamp_ids = synth_pop_ids[sample(seq_along(synth_pop_ids), n_samp, replace = FALSE)]
-  ref_subsamp = ref[ref_subsamp_ids,]
+  ref_subsamp_ids = synth_pop_ids[sample(seq_along(synth_pop_ids),
+                                         n_samp,
+                                         replace = FALSE)]
+  ref_subsamp = ref[ref_subsamp_ids, ]
   x_ref_subsamp = ref_subsamp[, x_vars]
   
   ## Estimate response propensities
@@ -75,10 +77,10 @@ get_estimate_posteriors = function(samp_id,
   y_fits_timer = timefactory()
   cat("Fitting y models ")
   y_fits_confounded = y_vars %>%
-    map( ~ bart_partial(x.train = x_samp, y.train = samp[[.x]]))
+    map(~ bart_partial(x.train = x_samp, y.train = samp[[.x]]))
   
   y_fits_unconfounded = y_vars %>%
-    map( ~ bart_partial(x.train = x_ref_subsamp, y.train = ref_subsamp[[.x]]))
+    map(~ bart_partial(x.train = x_ref_subsamp, y.train = ref_subsamp[[.x]]))
   
   cat(sprintf("%.1f\n", y_fits_timer()))
   
@@ -90,7 +92,7 @@ get_estimate_posteriors = function(samp_id,
   dr_fits_timer = timefactory()
   cat("Fitting OR-PSC models ")
   y_psc_fits = y_vars %>%
-    map( ~ bart_partial(x.train = x_samp_prop, y.train = samp[[.x]]))
+    map(~ bart_partial(x.train = x_samp_prop, y.train = samp[[.x]]))
   cat(sprintf("%.1f\n", dr_fits_timer()))
   
   cat("Saving BART fits ")
@@ -137,7 +139,7 @@ get_estimate_posteriors = function(samp_id,
     map_dfc(function(y_var) {
       weighted.mean(ref[[y_var]], sp_wts)
     })
-
+  
   # Estimate propensity weighted means
   res$y_bar_propwt = y_vars %>% map_dfc(function(y_var) {
     map(sample_weight_synth_pops, function(sp_wts) {
@@ -163,14 +165,16 @@ get_estimate_posteriors = function(samp_id,
   
   # Estimate basic OR means
   res$y_bar_pred = map_dfc(y_fits_confounded, function(y_fit) {
-    y_hat_pos = pbart_posterior(y_fit, newdata = x_ref, mc.cores = cores)
+    y_hat_pos = pbart_posterior(y_fit,
+                                newdata = x_ref,
+                                mc.cores = cores)
     
     map_dbl(y_hat_pos, ~ weighted.mean(.x, sp_wts))
     
   })
   
   cat(sprintf("finished pred means %.1f\n", est_timer()))
-
+  
   # Estimate DR-RBC means
   res$y_bar_drrbc = map_dfc(y_vars, function(y_var) {
     # Get the posterior distribution for the OR mean based on ref
@@ -180,7 +184,9 @@ get_estimate_posteriors = function(samp_id,
     pred_fit = y_fits_confounded[[y_var]]
     
     # Get posterior predicted values for sample based on OR model
-    y_hat_pos_samp = pbart_posterior(pred_fit, newdata = x_samp, mc.cores = cores)
+    y_hat_pos_samp = pbart_posterior(pred_fit,
+                                     newdata = x_samp,
+                                     mc.cores = cores)
     
     # Calculate the OR-RBC mean for each sp weight associted with each
     # posterior draw
@@ -200,8 +206,10 @@ get_estimate_posteriors = function(samp_id,
   cat(sprintf("finished DR RBC means %.1f\n", est_timer()))
   
   # Get propensities for reference sample
-  ref_propensities = pbart_posterior(propensity_fit, newdata = x_ref, mc.cores = cores)
-
+  ref_propensities = pbart_posterior(propensity_fit, 
+                                     newdata = x_ref, 
+                                     mc.cores = cores)
+  
   # Esitimate OR-PSC means
   x_ref_prop = x_ref %>%
     mutate(pi_hat = rowMeans(ref_propensities))
@@ -219,7 +227,7 @@ get_estimate_posteriors = function(samp_id,
                    min_s_prop = min(s_prop)
                    phi = ref_prop >= min_s_prop
                  })
-
+  
   res$y_bar_samp_confounded = y_vars %>%
     map_dfc(function(y_var) {
       y_pos = pbart_posterior(y_fits_confounded[[y_var]],
@@ -248,7 +256,7 @@ get_estimate_posteriors = function(samp_id,
         
         # Posterior for unconfounded population mean among region
         # of common support
-        y_bar_pop_unconfounded_cs = map2_dbl(y_pos, ref_phi, 
+        y_bar_pop_unconfounded_cs = map2_dbl(y_pos, ref_phi,
                                              function(y, phi) {
                                                weighted.mean(y, phi)
                                              })
@@ -258,7 +266,7 @@ get_estimate_posteriors = function(samp_id,
     transpose()
   
   res = c(res, y_bar_pop)
-    
+  
   cat(sprintf("Finished everything %.1f\n", from_start()))
   return(bind_rows(res, .id = "est"))
 }
